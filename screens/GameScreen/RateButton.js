@@ -1,78 +1,83 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { Button, ButtonGroup } from 'react-native-elements';
-import styles from './styles';
+import React from 'reactn';
+import { Button } from 'react-native-elements';
+import PropTypes from 'prop-types';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { fetchJSON } from '../../shared/HTTP';
+import styles from './styles';
 
-const LogPlayButton = ({ navigation: { navigate }, game }) => {
-	const [ playCount, setPlayCount ] = useState(0);
-	fetchPlayCount = async () => {
-		const path = `/geekplay.php?action=getuserplaycount&ajax=1&objectid=${game.objectId}&objecttype=thing`;
-
-		const { count } = await fetchJSON(path);
-		setPlayCount(count);
+export default class RateButton extends React.Component {
+	state = {
+		objectId: null,
+		collectionId: null,
+		ratingStatus: {}
 	};
 
-	useEffect(
-		() => {
-			fetchPlayCount();
-		},
-		[ game.objectId ]
-	);
+	componentDidMount = () => {
+		const { game } = this.props;
+		this.getUserGameDetails(game.objectId);
+	};
 
-	const buttons = [];
+	getUserGameDetails = async (objectId) => {
+		const { userid } = this.global.bggCredentials;
 
-	const logPlayButtonStyle =
-		playCount === 0
-			? {}
-			: {
-					width: 80,
-					marginRight: 0,
-					borderTopRightRadius: 0,
-					borderBottomRightRadius: 0
-				};
+		const url = `/api/collections?objectid=${objectId}&objecttype=thing&userid=${userid}`;
+		const { items } = await fetchJSON(url);
 
-	buttons.push(
-		<Button
-			key="logButton"
-			buttonStyle={styles.headerButton}
-			titleStyle={styles.headerButtonText}
-			containerStyle={{
-				...styles.headerButtonContainer,
-				...logPlayButtonStyle
-			}}
-			title="Log Play"
-			onPress={() =>
-				navigate('LogPlay', {
-					game
-				})}
-		/>
-	);
+		let collid = null,
+			status = null,
+			wishlistpriority;
 
-	if (playCount > 0) {
-		buttons.push(
+		if (items.length > 0) {
+			[ { collid, status, wishlistpriority } ] = items;
+		}
+
+		// fallback
+		status = status ? status : {};
+
+		this.setState({
+			collectionId: collid,
+			collectionStatus: status,
+			objectId
+		});
+	};
+
+	render = () => {
+		const { game, navigation: { navigate } } = this.props;
+
+		const { collectionId, ratingStatus } = this.state;
+
+		const isRated = Object.keys(ratingStatus).length > 0;
+
+		const icon = isRated ? (
+			<FontAwesome name="star" color="yellow" size={18} />
+		) : (
+			<FontAwesome name="star-o" color="yellow" size={18} />
+		);
+
+		return (
 			<Button
-				key="playsButton"
 				buttonStyle={styles.headerButton}
 				titleStyle={styles.headerButtonText}
 				containerStyle={{
-					...styles.headerButtonContainer,
-					width: 40,
-					borderLeftColor: 'black',
-					borderLeftWidth: 1,
-					borderTopLeftRadius: 0,
-					borderBottomLeftRadius: 0
+					...styles.headerButtonContainer
 				}}
-				title={playCount > 999 ? '1k+' : playCount.toString()}
+				icon={icon}
 				onPress={() =>
-					navigate('ListPlays', {
-						game
+					navigate('AddTo', {
+						game,
+						collectionId,
+						collectionStatus,
+						wishlistPriority
 					})}
+				title={isRated ? ' Rate Game' : ` ${rating}`}
 			/>
 		);
-	}
+	};
+}
 
-	return <View style={styles.headerButtonGroup}>{buttons}</View>;
+RateButton.propTypes = {
+	game: PropTypes.object.isRequired,
+	navigation: PropTypes.shape({
+		navigate: PropTypes.func.isRequired
+	}).isRequired
 };
-
-export default LogPlayButton;
