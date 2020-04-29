@@ -9,7 +9,7 @@ export default class RateButton extends React.Component {
 	state = {
 		objectId: null,
 		collectionId: null,
-		ratingStatus: {}
+		userRating: 'N/A'
 	};
 
 	componentDidMount = () => {
@@ -24,19 +24,15 @@ export default class RateButton extends React.Component {
 		const { items } = await fetchJSON(url);
 
 		let collid = null,
-			status = null,
-			wishlistpriority;
+			userRating = 'N/A';
 
 		if (items.length > 0) {
-			[ { collid, status, wishlistpriority } ] = items;
+			[ { collid, userRating } ] = items;
 		}
-
-		// fallback
-		status = status ? status : {};
 
 		this.setState({
 			collectionId: collid,
-			collectionStatus: status,
+			userRating: userRating,
 			objectId
 		});
 	};
@@ -44,9 +40,9 @@ export default class RateButton extends React.Component {
 	render = () => {
 		const { game, navigation: { navigate } } = this.props;
 
-		const { collectionId, ratingStatus } = this.state;
+		const { collectionId, userRating } = this.state;
 
-		const isRated = Object.keys(ratingStatus).length > 0;
+		const isRated = userRating !== 'N/A';
 
 		const icon = isRated ? (
 			<FontAwesome name="star" color="yellow" size={18} />
@@ -63,13 +59,12 @@ export default class RateButton extends React.Component {
 				}}
 				icon={icon}
 				onPress={() =>
-					navigate('AddTo', {
+					navigate('Rate', {
 						game,
 						collectionId,
-						collectionStatus,
-						wishlistPriority
+						userRating
 					})}
-				title={isRated ? ' Rate Game' : ` ${rating}`}
+				title={isRated ? ' Rate Game' : ` ${userRating}`}
 			/>
 		);
 	};
